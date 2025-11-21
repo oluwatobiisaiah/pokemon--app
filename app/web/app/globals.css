@@ -1,0 +1,93 @@
+/* Tailwind v4 import */
+@import "tailwindcss";
+
+/* Custom base styles */
+@layer base {
+  :root {
+    --background: 210 20% 98%; /* light neutral background */
+    --foreground: 210 15% 20%; /* dark gray text */
+    --accent: 210 90% 50%; /* professional blue accent */
+    --border: 210 15% 85%; /* subtle light border */
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  a {
+    color: hsl(var(--accent));
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  a:hover {
+    color: hsl(var(--accent) / 0.85);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  input, button, select, textarea {
+    font-family: inherit;
+    color: hsl(var(--foreground));
+    background-color: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.2s;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: hsl(var(--accent));
+    box-shadow: 0 0 0 3px hsl(var(--accent) / 0.2);
+  }
+
+  button {
+    cursor: pointer;
+    background-color: hsl(var(--accent));
+    color: white;
+    font-weight: 600;
+  }
+
+  button:hover {
+    background-color: hsl(var(--accent) / 0.85);
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  /* Scrollbar styles */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-200 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 rounded-full hover:bg-gray-500;
+  }
+}
