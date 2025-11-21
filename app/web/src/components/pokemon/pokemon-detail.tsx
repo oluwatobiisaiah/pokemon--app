@@ -26,7 +26,7 @@ export function PokemonDetailModal({ pokemonId, onClose }: PokemonDetailModalPro
       utils.getFavorites.invalidate();
     },
   });
-  
+
   const removeFavoriteMutation = trpc.removeFavorite.useMutation({
     onSuccess: () => {
       utils.getFavorites.invalidate();
@@ -37,15 +37,21 @@ export function PokemonDetailModal({ pokemonId, onClose }: PokemonDetailModalPro
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!pokemon) return;
 
     try {
       if (isFavorite) {
-        await removeFavoriteMutation.mutateAsync({ 
-          pokemonId: pokemon.id 
+        await removeFavoriteMutation.mutateAsync({
+          pokemonId: pokemon.id
         });
       } else {
+        console.log('Adding favorite with input:', {
+          pokemonId: pokemon.id,
+          pokemonName: pokemon.name,
+          pokemonSprite: pokemon.spriteUrl,
+        });
+
         await addFavoriteMutation.mutateAsync({
           pokemonId: pokemon.id,
           pokemonName: pokemon.name,
@@ -59,14 +65,14 @@ export function PokemonDetailModal({ pokemonId, onClose }: PokemonDetailModalPro
 
   // Focus management + ESC handling
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    
+
     document.addEventListener('keydown', onKey);
-    
+
     // Lock scroll
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -134,7 +140,7 @@ export function PokemonDetailModal({ pokemonId, onClose }: PokemonDetailModalPro
                         priority
                       />
                     </div>
-                    
+
                     <button
                       onClick={handleToggleFavorite}
                       disabled={addFavoriteMutation.isPending || removeFavoriteMutation.isPending}
@@ -143,11 +149,10 @@ export function PokemonDetailModal({ pokemonId, onClose }: PokemonDetailModalPro
                     >
                       <Heart
                         size={24}
-                        className={`${
-                          isFavorite
+                        className={`${isFavorite
                             ? 'text-red-500 fill-red-500'
                             : 'text-white'
-                        } transition-all`}
+                          } transition-all`}
                       />
                     </button>
                   </div>

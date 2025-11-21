@@ -26,7 +26,7 @@ A modern, full-stack Pokémon management application built with Next.js, Express
 ### Tech Stack
 
 **Frontend:**
-- Next.js 14 (App Router)
+- Next.js 16 (App Router)
 - TypeScript (strict mode)
 - Tailwind CSS
 - Framer Motion
@@ -79,7 +79,7 @@ pokemon-manager/
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 22+ 
 - pnpm (recommended) or npm
 
 ### Installation
@@ -166,6 +166,12 @@ pnpm dev
 - **Empty states** with helpful messaging
 - **Modal dialogs** for detailed views
 - **Responsive grid layouts** that adapt to screen size
+
+## Retry Mechanism
+- Applied exponential backoff with jitter for the API calls especially when the error is not a 5XX and it's not happening during the getLists call.
+
+## Authorization
+- Used automatically generated sessionID for each unique user to mark their favorites
 
 ## 🔧 Development
 
