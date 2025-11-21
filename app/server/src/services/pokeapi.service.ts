@@ -3,9 +3,9 @@ import { cacheService } from './cache.service';
 import { request } from 'undici';
 
 const POKEAPI_BASE = 'https://pokeapi.co/api/v2';
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 10_000;
 const INITIAL_RETRY_DELAY = 1;
-const MAX_RETRIES = 10;
+const MAX_RETRIES = 5;
 
 interface PokeApiPokemon {
   id: number;
@@ -78,9 +78,10 @@ class PokeApiService {
   private async fetchWithCachAndRetry<T>(
     url: string,
     cacheKey: string,
-    maxRetries = MAX_RETRIES,
+    options: { maxRetries?: number; retryOn5xx?: boolean } = {},
     attempt = 0
   ): Promise<T> {
+    const { maxRetries = MAX_RETRIES, retryOn5xx = true } = options;
     const cached = cacheService.get<T>(cacheKey);
     if (cached) {
       return cached;
@@ -110,17 +111,17 @@ class PokeApiService {
         );
 
         await this.sleep(retryAfter);
-        return this.fetchWithCachAndRetry<T>(url, cacheKey, maxRetries, attempt + 1);
+        return this.fetchWithCachAndRetry<T>(url, cacheKey, {maxRetries}, attempt + 1);
       }
 
-      if (statusCode >= 500 && attempt < maxRetries) {
+      if (statusCode >= 500 && attempt < maxRetries && retryOn5xx) {
         const delay = this.calculateBackoffDelay(attempt);
         console.warn(
-          `[${statusCode}] Server error. Retry ${attempt + 1}/${maxRetries} in ${delay}ms for ${url}`
+          `[${statusCode}] Server error. Retry ${attempt + 1}/${maxRetries} in ${delay}ms for ${url} ${await res.body.text()}`
         );
 
         await this.sleep(delay);
-        return this.fetchWithCachAndRetry<T>(url, cacheKey, maxRetries, attempt + 1);
+        return this.fetchWithCachAndRetry<T>(url, cacheKey, options, attempt + 1);
       }
 
       // ----- NON-RETRYABLE -----
@@ -140,7 +141,7 @@ class PokeApiService {
         );
 
         await this.sleep(delay);
-        return this.fetchWithCachAndRetry<T>(url, cacheKey, maxRetries, attempt + 1);
+        return this.fetchWithCachAndRetry<T>(url, cacheKey, options, attempt + 1);
       }
 
       throw err;
@@ -149,6 +150,35 @@ class PokeApiService {
     }
   }
 
+
+  private async processWithConcurrency<T>(
+    items: T[],
+    processor: (item: T) => Promise<Pokemon | null>,
+    maxConcurrency: number
+  ): Promise<Pokemon[]> {
+    const results: Pokemon[] = [];
+    let running = 0;
+
+    const promises = items.map(async (item) => {
+      while (running >= maxConcurrency) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+      running++;
+      try {
+        const result = await processor(item);
+        if (result) {
+          results.push(result);
+        }
+      } catch (error) {
+        console.warn(`Failed to process item: ${(error as Error).message}`);
+      } finally {
+        running--;
+      }
+    });
+
+    await Promise.all(promises);
+    return results;
+  }
 
   async getPokemonList(limit = 150, offset = 0): Promise<Pokemon[]> {
     const cacheKey = `pokemon-list-${limit}-${offset}`;
@@ -162,15 +192,22 @@ class PokeApiService {
       `pokemon-list-meta-${limit}-${offset}`
     );
 
-    const pokemonPromises = listData.results.map(async (item) => {
-      const id = this.extractIdFromUrl(item.url);
-      return this.getPokemonBasic(id);
-    });
+    const results = await this.processWithConcurrency(
+      listData.results,
+      async (item) => {
+        try {
+          const id = this.extractIdFromUrl(item.url);
+          return await this.getPokemonBasic(id);
+        } catch (error) {
+          console.warn(`Failed to fetch Pokemon ${this.extractIdFromUrl(item.url)}: ${(error as Error).message}`);
+          return null;
+        }
+      },
+      20 // Max 20 concurrent requests
+    );
 
-    const pokemonList = await Promise.all(pokemonPromises);
-    cacheService.set(cacheKey, pokemonList);
-
-    return pokemonList;
+    cacheService.set(cacheKey, results);
+    return results;
   }
 
   private async getPokemonBasic(id: number): Promise<Pokemon> {
@@ -182,7 +219,8 @@ class PokeApiService {
 
     const data = await this.fetchWithCachAndRetry<PokeApiPokemon>(
       `${POKEAPI_BASE}/pokemon/${id}`,
-      `pokemon-raw-${id}`
+      `pokemon-raw-${id}`,
+      { retryOn5xx: false }
     );
 
     const pokemon = this.mapToPokemon(data);

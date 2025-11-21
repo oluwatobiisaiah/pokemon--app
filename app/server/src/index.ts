@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import { pokemonRouter } from './routers/pokemon.router';
+import { createContext } from '../trpc';
 import { errorHandler } from './middleware/error-handler';
 import { requestLogger } from './middleware/request-logger';
 import { cacheService } from './services/cache.service';
@@ -34,7 +35,7 @@ app.use(
   '/trpc',
   createExpressMiddleware({
     router: pokemonRouter,
-    createContext: () => ({}),
+    createContext,
   })
 );
 

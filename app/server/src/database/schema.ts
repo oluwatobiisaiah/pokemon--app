@@ -3,14 +3,15 @@ import { sql } from 'drizzle-orm/sql';
 
 export const favorites: any = sqliteTable('favorites', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  pokemonId: integer('pokemon_id').notNull().unique(),
+  userId: text('user_id').notNull(),
+  pokemonId: integer('pokemon_id').notNull(),
   pokemonName: text('pokemon_name').notNull(),
   pokemonSprite: text('pokemon_sprite'),
   addedAt: integer('added_at', { mode: 'timestamp' })
     .notNull()
     .default(sql`(unixepoch())`),
 }, (table) => ({
-  pokemonIdIdx: index('idx_pokemon_id').on(table.pokemonId),
+  userPokemonIdx: index('idx_user_pokemon').on(table.userId, table.pokemonId),
   addedAtIdx: index('idx_added_at').on(table.addedAt),
 }));
 

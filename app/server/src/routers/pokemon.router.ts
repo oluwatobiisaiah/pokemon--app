@@ -1,15 +1,11 @@
-import { z } from 'zod';
-import { initTRPC, TRPCError } from '@trpc/server';
-import { pokeApiService } from '../services/pokeapi.service';
-import { favoritesService } from '../services/favorites.service';
-
-const t = initTRPC.create();
-
-const router = t.router;
-const publicProcedure = t.procedure;
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { router, procedure } from "../../trpc";
+import { pokeApiService } from "../services/pokeapi.service";
+import { favoritesService } from "../services/favorites.service";
 
 export const pokemonRouter = router({
-  getList: publicProcedure
+  getList: procedure
     .input(
       z.object({
         limit: z.number().min(1).max(151).default(150),
@@ -18,8 +14,11 @@ export const pokemonRouter = router({
     )
     .query(async ({ input }) => {
       try {
-        const pokemon = await pokeApiService.getPokemonList(input.limit, input.offset);
-        
+        const pokemon = await pokeApiService.getPokemonList(
+          input.limit,
+          input.offset
+        );
+
         return {
           data: pokemon,
           total: 150,
@@ -28,94 +27,103 @@ export const pokemonRouter = router({
           hasMore: input.offset + input.limit < 150,
         };
       } catch (error) {
-        console.error('Error fetching pokemon list:', error);
+        console.error('getList error:', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch Pokemon list',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch Pokemon list",
           cause: error,
         });
       }
     }),
 
-  getDetail: publicProcedure
+  getDetail: procedure
     .input(z.object({ id: z.number().min(1).max(151) }))
     .query(async ({ input }) => {
       try {
         return await pokeApiService.getPokemonDetail(input.id);
       } catch (error) {
-        console.error(`Error fetching pokemon detail for id ${input.id}:`, error);
+        console.error('getDetail error:', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to fetch Pokemon details',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch Pokemon details",
           cause: error,
         });
       }
     }),
 
-  getFavorites: publicProcedure.query(async () => {
+  getFavorites: procedure.query(async ({ ctx }) => {
     try {
-      return await favoritesService.getFavorites();
+      console.log('getFavorites called with sessionId:', ctx.sessionId);
+      return await favoritesService.getFavorites(ctx.sessionId);
     } catch (error) {
-      console.error('Error fetching favorites:', error);
+      console.error('getFavorites error:', error);
       throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Failed to fetch favorites',
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch favorites",
         cause: error,
       });
     }
   }),
 
-  addFavorite: publicProcedure
+  addFavorite: procedure
     .input(
       z.object({
-        pokemonId: z.number().min(1),
-        pokemonName: z.string().min(1),
+        pokemonId: z.number(),
+        pokemonName: z.string(),
         pokemonSprite: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      console.log('addFavorite called:', { input, sessionId: ctx.sessionId });
+      
       try {
         return await favoritesService.addFavorite(
+          ctx.sessionId,
           input.pokemonId,
           input.pokemonName,
           input.pokemonSprite
         );
       } catch (error) {
-        console.error('Error adding favorite:', error);
+        console.error('addFavorite error:', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to add favorite',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to add favorite",
           cause: error,
         });
       }
     }),
 
-  removeFavorite: publicProcedure
-    .input(z.object({ pokemonId: z.number().min(1) }))
-    .mutation(async ({ input }) => {
+  removeFavorite: procedure
+    .input(z.object({ pokemonId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      console.log('removeFavorite called:', { input, sessionId: ctx.sessionId });
+      
       try {
-        const success = await favoritesService.removeFavorite(input.pokemonId);
+        const success = await favoritesService.removeFavorite(
+          ctx.sessionId,
+          input.pokemonId
+        );
         return { success };
       } catch (error) {
-        console.error('Error removing favorite:', error);
+        console.error('removeFavorite error:', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to remove favorite',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to remove favorite",
           cause: error,
         });
       }
     }),
 
-  isFavorite: publicProcedure
-    .input(z.object({ pokemonId: z.number().min(1) }))
-    .query(async ({ input }) => {
+  isFavorite: procedure
+    .input(z.object({ pokemonId: z.number() }))
+    .query(async ({ input, ctx }) => {
       try {
-        return await favoritesService.isFavorite(input.pokemonId);
+        return await favoritesService.isFavorite(ctx.sessionId, input.pokemonId);
       } catch (error) {
-        console.error('Error checking favorite status:', error);
+        console.error('isFavorite error:', error);
         throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to check favorite status',
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to check favorite",
           cause: error,
         });
       }
