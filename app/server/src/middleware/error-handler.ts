@@ -1,10 +1,9 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { Request, Response } from 'express';
 
 export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
 ) => {
   console.error('Express Error:', {
     message: err.message,
