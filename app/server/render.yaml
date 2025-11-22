@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: pokemon-api
+    runtime: node
+    plan: free
+    buildCommand: pnpm install
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: staging
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        value: /opt/render/project/data/pokemon.db
+      - key: CORS_ORIGIN
+        value: https://pokemon-app-web.vercel.app
+      - key: CACHE_TTL
+        value: 3600
+      - key: CORS_ORIGIN
+        sync: false 
