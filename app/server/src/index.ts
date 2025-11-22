@@ -9,6 +9,7 @@ import { requestLogger } from './middleware/request-logger';
 import { cacheService } from './services/cache.service';
 import { closeDatabase } from './database';
 import dotenv from 'dotenv';
+import { notFoundHandler } from './middleware/not-found';
 
 dotenv.config();
 
@@ -57,6 +58,8 @@ app.post('/cache/clear', (_, res) => {
   res.json({ message: 'Cache cleared successfully' });
 });
 
+
+app.use(notFoundHandler);
 app.use(errorHandler);
 
 const server = app.listen(PORT, () => {
