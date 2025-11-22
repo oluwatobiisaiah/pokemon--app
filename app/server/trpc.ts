@@ -1,4 +1,3 @@
-// apps/server/src/trpc/index.ts
 import { initTRPC } from '@trpc/server';
 import superjson from 'superjson';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
@@ -17,7 +16,7 @@ export const createContext = ({ req }: CreateExpressContextOptions): Context => 
 const t = initTRPC.context<Context>().create({
   transformer: superjson, // IMPORTANT: Add this
   errorFormatter({ shape, error }) {
-    console.error('🔴 tRPC Error:', {
+    console.error('tRPC Error:', {
       code: shape.data.code,
       message: error.message,
     });
