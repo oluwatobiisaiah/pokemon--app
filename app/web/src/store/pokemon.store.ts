@@ -28,9 +28,9 @@ export const usePokemonStore = create<PokemonStore>((set) => ({
   
   setSearchQuery: (query) => set({ searchQuery: query }),
   
-  setSelectedType: (type) => set({ selectedType: type }),
+  setSelectedType: (type) => set({ selectedType: type, selectedPokemonId: null }),
   
-  setShowFavoritesOnly: (show) => set({ showFavoritesOnly: show }),
+  setShowFavoritesOnly: (show) => set({ showFavoritesOnly: show, selectedPokemonId: null }),
   
   setSelectedPokemonId: (id) => set({ selectedPokemonId: id }),
   
