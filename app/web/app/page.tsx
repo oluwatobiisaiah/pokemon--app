@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { trpc } from '@/src/lib/trpc';
 import { usePokemonStore } from '@/src//store/pokemon.store';
@@ -8,11 +8,10 @@ import { PokemonGrid } from '@/src/components/pokemon/pokemon-grid';
 import { PokemonCardSkeleton } from '@/src/components/pokemon/pokemon-card-skeleton';
 import { SearchBar } from '@/src/components/ui/search-bar';
 import { Header } from '@/src/components/layout/header';
-import { LoadingSpinner } from '@/src/components/ui/loading-spinner';
 import { EmptyState } from '@/src/components/ui/empty-state';
 import { PokemonDetailModal } from '@/src/components/pokemon/pokemon-detail';
 import { FilterBar } from '@/src/components/ui/filter-bar';
-import { Favorite, Pokemon } from '@pokemon/types';
+import {Pokemon } from '@pokemon/types';
 
 export default function HomePage() {
   const {
@@ -26,24 +25,34 @@ export default function HomePage() {
   const [offset, setOffset] = useState(0);
   const [allPokemon, setAllPokemon] = useState<Pokemon[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-
+  const loadingRef = useRef(false);
+  const loadPerbatch = parseInt(process.env.NEXT_PUBLIC_POKEMON_LOAD_PER_BATCH || '40');
   const { data: pokemonList, isLoading: isPokemonLoading } = trpc.getList.useQuery(
-    { limit: 10, offset }
+    { limit: loadPerbatch, offset }
   );
 
   useEffect(() => {
     if (pokemonList?.data) {
       setAllPokemon(prev => [...prev, ...pokemonList.data]);
       setIsLoadingMore(false);
+      loadingRef.current = false;
     }
   }, [pokemonList]);
 
   const loadMore = () => {
-    if (pokemonList?.hasMore && !isLoadingMore) {
+    if (pokemonList?.hasMore && !loadingRef.current) {
+      loadingRef.current = true;
       setIsLoadingMore(true);
-      setOffset(prev => prev + 10);
+      setOffset(prev => prev + loadPerbatch);
     }
   };
+
+  useEffect(() => {
+    setOffset(0);
+    setAllPokemon([]);
+    loadingRef.current = false;
+    setIsLoadingMore(false);
+  }, [selectedType, showFavoritesOnly]);
 
   const { data: favorites, isLoading: isFavoritesLoading } = trpc.getFavorites.useQuery();
 
@@ -77,7 +86,7 @@ export default function HomePage() {
   const isLoading = isInitialLoading || isFavoritesLoading;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Header />
 
@@ -87,9 +96,15 @@ export default function HomePage() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center items-center min-h-[400px]">
-            <LoadingSpinner size="lg" />
-          </div>
+          <motion.section
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4"
+          >
+            {Array.from({ length: 20 }).map((_, index) => (
+              <PokemonCardSkeleton key={`initial-skeleton-${index}`} />
+            ))}
+          </motion.section>
         ) : filteredPokemon.length === 0 ? (
           <EmptyState />
         ) : (

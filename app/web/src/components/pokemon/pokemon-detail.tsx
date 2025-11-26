@@ -4,10 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, TrendingUp, Zap, Weight, Ruler } from 'lucide-react';
 import Image from 'next/image';
 import { trpc } from '@/src/lib/trpc';
-import { LoadingSpinner } from '../ui/loading-spinner';
 import { TypeBadge } from './type-badge';
 import { EvolutionChain } from './evolution-chain';
 import { StatBar } from './stat-bar';
+import { PokemonDetailSkeleton } from './pokemon-detail-skeleton';
 import { formatPokemonId, formatWeight, formatHeight } from '@/src/lib/utils';
 import { useEffect, useRef } from 'react';
 
@@ -120,9 +120,7 @@ export function PokemonDetailModal({ pokemonId, onClose }: PokemonDetailModalPro
           </div>
 
           {isLoading || !pokemon ? (
-            <div className="flex justify-center items-center min-h-[400px]">
-              <LoadingSpinner size="lg" />
-            </div>
+            <PokemonDetailSkeleton />
           ) : (
             <div className="px-4 sm:px-6 lg:px-8 pb-8">
               <div className="grid md:grid-cols-2 gap-6 lg:gap-8 mb-8">
